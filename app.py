@@ -2,13 +2,21 @@ from flask import Flask, render_template, request, redirect, url_for
 import psutil
 import sqlite3
 from datetime import datetime
+import threading
+import time
 
 app = Flask(__name__)
 
 DATABASE = "cloudpulse.db"
 
+# Prevent starting multiple monitoring threads
+monitor_started = False
+monitor_lock = threading.Lock()
 
-# ---------------- DATABASE ----------------
+
+# =========================================================
+# DATABASE
+# =========================================================
 
 def create_database():
     connection = sqlite3.connect(DATABASE)
@@ -68,7 +76,9 @@ def create_database():
     connection.close()
 
 
-# ---------------- SETTINGS ----------------
+# =========================================================
+# SETTINGS
+# =========================================================
 
 def get_thresholds():
     connection = sqlite3.connect(DATABASE)
@@ -81,7 +91,6 @@ def get_thresholds():
     """)
 
     result = cursor.fetchone()
-
     connection.close()
 
     return result[0], result[1]
@@ -102,7 +111,9 @@ def update_thresholds(warning, critical):
     connection.close()
 
 
-# ---------------- STATUS ----------------
+# =========================================================
+# STATUS
+# =========================================================
 
 def get_status(value, warning, critical):
     if value >= critical:
@@ -115,7 +126,9 @@ def get_status(value, warning, critical):
         return "Normal"
 
 
-# ---------------- RESOURCE STATE ----------------
+# =========================================================
+# RESOURCE STATE
+# =========================================================
 
 def get_previous_status(resource):
     connection = sqlite3.connect(DATABASE)
@@ -128,7 +141,6 @@ def get_previous_status(resource):
     """, (resource,))
 
     result = cursor.fetchone()
-
     connection.close()
 
     if result:
@@ -151,13 +163,17 @@ def update_resource_status(resource, status):
     connection.close()
 
 
-# ---------------- MONITORING ----------------
+# =========================================================
+# MONITORING HISTORY
+# =========================================================
 
 def save_reading(cpu, memory, disk, health):
     connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
-    recorded_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    recorded_at = datetime.now().strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
 
     cursor.execute("""
         INSERT INTO monitoring_history
@@ -193,13 +209,17 @@ def get_recent_history():
     return history
 
 
-# ---------------- ALERTS ----------------
+# =========================================================
+# ALERT HISTORY
+# =========================================================
 
 def save_alert(resource, usage, status):
     connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
-    recorded_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    recorded_at = datetime.now().strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
 
     message = f"{resource} usage reached {usage}%"
 
@@ -220,10 +240,9 @@ def save_alert(resource, usage, status):
 
 
 def process_alert(resource, usage, status):
-
     previous_status = get_previous_status(resource)
 
-    # Save only when the status changes
+    # Save alert only when status changes
     if status != previous_status:
 
         if status != "Normal":
@@ -257,10 +276,11 @@ def get_alert_history():
     return alerts
 
 
-# ---------------- DASHBOARD ----------------
+# =========================================================
+# COLLECT RESOURCE DATA
+# =========================================================
 
-@app.route("/")
-def dashboard():
+def collect_resource_data():
 
     warning_threshold, critical_threshold = get_thresholds()
 
@@ -307,16 +327,7 @@ def dashboard():
         ("Storage", disk_usage, disk_status)
     ]
 
-    alerts = []
-
     for resource, usage, status in resources:
-
-        if status != "Normal":
-            alerts.append(
-                f"{resource} usage is {status}: {usage}%"
-            )
-
-        # Prevent duplicate alert records
         process_alert(
             resource,
             usage,
@@ -329,6 +340,112 @@ def dashboard():
         disk_usage,
         health
     )
+
+
+# =========================================================
+# BACKGROUND MONITOR
+# =========================================================
+
+def background_monitor():
+
+    while True:
+
+        try:
+            collect_resource_data()
+
+        except Exception as error:
+            print(
+                "Monitoring error:",
+                error
+            )
+
+        # Collect again after 10 seconds
+        time.sleep(10)
+
+
+def start_background_monitor():
+
+    global monitor_started
+
+    with monitor_lock:
+
+        if monitor_started:
+            return
+
+        monitor_started = True
+
+        monitor_thread = threading.Thread(
+            target=background_monitor,
+            daemon=True
+        )
+
+        monitor_thread.start()
+
+
+# =========================================================
+# DASHBOARD
+# =========================================================
+
+@app.route("/")
+def dashboard():
+
+    warning_threshold, critical_threshold = get_thresholds()
+
+    # Current values shown immediately
+    cpu_usage = psutil.cpu_percent(interval=0.5)
+    memory_usage = psutil.virtual_memory().percent
+    disk_usage = psutil.disk_usage("/").percent
+
+    cpu_status = get_status(
+        cpu_usage,
+        warning_threshold,
+        critical_threshold
+    )
+
+    memory_status = get_status(
+        memory_usage,
+        warning_threshold,
+        critical_threshold
+    )
+
+    disk_status = get_status(
+        disk_usage,
+        warning_threshold,
+        critical_threshold
+    )
+
+    statuses = [
+        cpu_status,
+        memory_status,
+        disk_status
+    ]
+
+    if "Critical" in statuses:
+        health = "Critical"
+
+    elif "Warning" in statuses:
+        health = "Warning"
+
+    else:
+        health = "Normal"
+
+    # Active alerts shown on dashboard
+    alerts = []
+
+    resources = [
+        ("CPU", cpu_usage, cpu_status),
+        ("Memory", memory_usage, memory_status),
+        ("Storage", disk_usage, disk_status)
+    ]
+
+    for resource, usage, status in resources:
+
+        if status != "Normal":
+
+            alerts.append(
+                f"{resource} usage is "
+                f"{status}: {usage}%"
+            )
 
     history = get_recent_history()
 
@@ -379,7 +496,9 @@ def dashboard():
     )
 
 
-# ---------------- SETTINGS ----------------
+# =========================================================
+# SETTINGS
+# =========================================================
 
 @app.route("/settings", methods=["GET", "POST"])
 def settings():
@@ -391,6 +510,7 @@ def settings():
     if request.method == "POST":
 
         try:
+
             warning = float(
                 request.form["warning_threshold"]
             )
@@ -402,7 +522,8 @@ def settings():
             if warning < 0 or critical > 100:
 
                 error = (
-                    "Thresholds must be between 0 and 100."
+                    "Thresholds must be between "
+                    "0 and 100."
                 )
 
             elif warning >= critical:
@@ -437,8 +558,21 @@ def settings():
     )
 
 
-# Create database tables when the application starts
+# =========================================================
+# APPLICATION STARTUP
+# =========================================================
+
+# Required for both local Flask and Gunicorn deployment
 create_database()
 
+# Start automatic monitoring
+start_background_monitor()
+
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
+
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=False
+    )
