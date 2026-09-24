@@ -8,9 +8,6 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <!-- Refresh dashboard every 5 seconds -->
-    
-
     <title>CloudPulse Dashboard</title>
 
     <!-- Chart.js -->
@@ -46,26 +43,33 @@
             margin: 5px 0 0;
         }
 
-        .settings-button {
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .header-button {
             background-color: white;
             color: #1f2937;
             padding: 10px 16px;
             text-decoration: none;
+            border: none;
             border-radius: 6px;
             font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
         }
 
-        .settings-button:hover {
+        .header-button:hover {
             background-color: #e5e7eb;
         }
 
-        /* MAIN CONTAINER */
+        /* MAIN */
 
         .container {
             padding: 30px 40px;
         }
-
-        /* COMMON BOX */
 
         .box {
             background: white;
@@ -103,7 +107,7 @@
             font-weight: bold;
         }
 
-        /* STATUS COLORS */
+        /* STATUS */
 
         .normal {
             color: #16803c;
@@ -121,8 +125,6 @@
             color: #16803c;
             font-weight: bold;
         }
-
-        /* INFORMATION */
 
         .refresh-info {
             color: #6b7280;
@@ -174,6 +176,34 @@
             background-color: #f4f6f9;
         }
 
+        /* MOBILE */
+
+        @media (max-width: 800px) {
+
+            .cards {
+                flex-direction: column;
+            }
+
+            .graphs {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .header-actions {
+                flex-wrap: wrap;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+        }
+
     </style>
 
 </head>
@@ -197,19 +227,31 @@
         </div>
 
 
-        <a href="/settings"
-           class="settings-button">
+        <div class="header-actions">
 
-            Threshold Settings
+            <button
+                class="header-button"
+                onclick="window.location.reload();">
 
-        </a>
+                Refresh Dashboard
+
+            </button>
+
+
+            <a
+                href="/settings"
+                class="header-button">
+
+                Threshold Settings
+
+            </a>
+
+        </div>
 
     </div>
 
 </header>
 
-
-<!-- MAIN CONTENT -->
 
 <div class="container">
 
@@ -225,7 +267,7 @@
         </p>
 
         <p class="refresh-info">
-            Monitoring automatically updates every 5 seconds.
+            Background monitoring collects resource data every 10 seconds.
         </p>
 
     </div>
@@ -247,9 +289,7 @@
             </div>
 
             <div class="resource-status {{ cpu_status|lower }}">
-
                 Status: {{ cpu_status }}
-
             </div>
 
         </div>
@@ -266,9 +306,7 @@
             </div>
 
             <div class="resource-status {{ memory_status|lower }}">
-
                 Status: {{ memory_status }}
-
             </div>
 
         </div>
@@ -285,9 +323,7 @@
             </div>
 
             <div class="resource-status {{ disk_status|lower }}">
-
                 Status: {{ disk_status }}
-
             </div>
 
         </div>
@@ -303,9 +339,7 @@
         <h2>Overall System Health</h2>
 
         <h3 class="{{ health|lower }}">
-
             {{ health }}
-
         </h3>
 
     </div>
@@ -320,28 +354,19 @@
 
         {% if alerts %}
 
-
             {% for alert in alerts %}
 
                 <div class="alert-item">
-
                     {{ alert }}
-
                 </div>
 
             {% endfor %}
 
-
         {% else %}
 
-
             <p class="normal">
-
-                No active alerts.
-                All resources are operating normally.
-
+                No active alerts. All resources are operating normally.
             </p>
-
 
         {% endif %}
 
@@ -353,7 +378,6 @@
     <div class="box">
 
         <h2>Resource Usage Trends</h2>
-
 
         <div class="graphs">
 
@@ -402,7 +426,6 @@
 
         <h2>Recent Monitoring History</h2>
 
-
         <table>
 
             <tr>
@@ -422,36 +445,23 @@
 
             {% for record in history %}
 
-
             <tr>
 
-                <td>
-                    {{ record[4] }}
-                </td>
+                <td>{{ record[4] }}</td>
 
-                <td>
-                    {{ record[0] }}%
-                </td>
+                <td>{{ record[0] }}%</td>
 
-                <td>
-                    {{ record[1] }}%
-                </td>
+                <td>{{ record[1] }}%</td>
 
-                <td>
-                    {{ record[2] }}%
-                </td>
+                <td>{{ record[2] }}%</td>
 
                 <td class="{{ record[3]|lower }}">
-
                     {{ record[3] }}
-
                 </td>
 
             </tr>
 
-
             {% endfor %}
-
 
         </table>
 
@@ -466,7 +476,6 @@
 
 
         {% if alert_history %}
-
 
         <table>
 
@@ -487,47 +496,31 @@
 
             {% for alert in alert_history %}
 
-
             <tr>
 
-                <td>
-                    {{ alert[4] }}
-                </td>
+                <td>{{ alert[4] }}</td>
 
-                <td>
-                    {{ alert[0] }}
-                </td>
+                <td>{{ alert[0] }}</td>
 
-                <td>
-                    {{ alert[1] }}%
-                </td>
+                <td>{{ alert[1] }}%</td>
 
                 <td class="{{ alert[2]|lower }}">
-
                     {{ alert[2] }}
-
                 </td>
 
-                <td>
-                    {{ alert[3] }}
-                </td>
+                <td>{{ alert[3] }}</td>
 
             </tr>
 
-
             {% endfor %}
-
 
         </table>
 
-
         {% else %}
-
 
             <p>
                 No alerts have been recorded yet.
             </p>
-
 
         {% endif %}
 
@@ -554,144 +547,96 @@
         {{ graph_disk | tojson }};
 
 
-    /* CPU CHART */
+    /* CPU */
 
     new Chart(
-
         document.getElementById("cpuChart"),
-
         {
-
             type: "line",
 
             data: {
-
                 labels: times,
 
                 datasets: [{
-
                     label: "CPU Usage (%)",
-
                     data: cpuData,
-
                     tension: 0.3
-
                 }]
-
             },
 
             options: {
+                responsive: true,
 
                 scales: {
-
                     y: {
-
                         beginAtZero: true,
-
                         max: 100
-
                     }
-
                 }
-
             }
-
         }
-
     );
 
 
-    /* MEMORY CHART */
+    /* MEMORY */
 
     new Chart(
-
         document.getElementById("memoryChart"),
-
         {
-
             type: "line",
 
             data: {
-
                 labels: times,
 
                 datasets: [{
-
                     label: "Memory Usage (%)",
-
                     data: memoryData,
-
                     tension: 0.3
-
                 }]
-
             },
 
             options: {
+                responsive: true,
 
                 scales: {
-
                     y: {
-
                         beginAtZero: true,
-
                         max: 100
-
                     }
-
                 }
-
             }
-
         }
-
     );
 
 
-    /* STORAGE CHART */
+    /* STORAGE */
 
     new Chart(
-
         document.getElementById("diskChart"),
-
         {
-
             type: "line",
 
             data: {
-
                 labels: times,
 
                 datasets: [{
-
                     label: "Storage Usage (%)",
-
                     data: diskData,
-
                     tension: 0.3
-
                 }]
-
             },
 
             options: {
+                responsive: true,
 
                 scales: {
-
                     y: {
-
                         beginAtZero: true,
-
                         max: 100
-
                     }
-
                 }
-
             }
-
         }
-
     );
 
 </script>
