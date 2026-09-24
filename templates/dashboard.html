@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <!-- Refresh dashboard every 5 seconds -->
+    <meta http-equiv="refresh" content="5">
+
+    <title>CloudPulse Dashboard</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+        }
+
+        /* HEADER */
+
+        header {
+            background-color: #1f2937;
+            color: white;
+            padding: 20px 40px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        header p {
+            margin: 5px 0 0;
+        }
+
+        .settings-button {
+            background-color: white;
+            color: #1f2937;
+            padding: 10px 16px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .settings-button:hover {
+            background-color: #e5e7eb;
+        }
+
+        /* MAIN CONTAINER */
+
+        .container {
+            padding: 30px 40px;
+        }
+
+        /* COMMON BOX */
+
+        .box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        /* RESOURCE CARDS */
+
+        .cards {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            flex: 1;
+        }
+
+        .card h3 {
+            margin-top: 0;
+        }
+
+        .value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .resource-status {
+            font-weight: bold;
+        }
+
+        /* STATUS COLORS */
+
+        .normal {
+            color: #16803c;
+        }
+
+        .warning {
+            color: #c47a00;
+        }
+
+        .critical {
+            color: #c62828;
+        }
+
+        .online {
+            color: #16803c;
+            font-weight: bold;
+        }
+
+        /* INFORMATION */
+
+        .refresh-info {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        /* ALERTS */
+
+        .alert-item {
+            background-color: #fff3e0;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 5px;
+        }
+
+        /* GRAPHS */
+
+        .graphs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .graph-box {
+            background-color: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .graph-box h3 {
+            margin-top: 0;
+        }
+
+        /* TABLES */
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f4f6f9;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- HEADER -->
+
+<header>
+
+    <div class="header-content">
+
+        <div>
+
+            <h1>CloudPulse</h1>
+
+            <p>Cloud Resource Monitor</p>
+
+        </div>
+
+
+        <a href="/settings"
+           class="settings-button">
+
+            Threshold Settings
+
+        </a>
+
+    </div>
+
+</header>
+
+
+<!-- MAIN CONTENT -->
+
+<div class="container">
+
+
+    <!-- SERVER STATUS -->
+
+    <div class="box">
+
+        <h2>Server Status</h2>
+
+        <p class="online">
+            ● Online
+        </p>
+
+        <p class="refresh-info">
+            Monitoring automatically updates every 5 seconds.
+        </p>
+
+    </div>
+
+
+    <!-- RESOURCE CARDS -->
+
+    <div class="cards">
+
+
+        <!-- CPU -->
+
+        <div class="card">
+
+            <h3>CPU Usage</h3>
+
+            <div class="value">
+                {{ cpu }}%
+            </div>
+
+            <div class="resource-status {{ cpu_status|lower }}">
+
+                Status: {{ cpu_status }}
+
+            </div>
+
+        </div>
+
+
+        <!-- MEMORY -->
+
+        <div class="card">
+
+            <h3>Memory Usage</h3>
+
+            <div class="value">
+                {{ memory }}%
+            </div>
+
+            <div class="resource-status {{ memory_status|lower }}">
+
+                Status: {{ memory_status }}
+
+            </div>
+
+        </div>
+
+
+        <!-- STORAGE -->
+
+        <div class="card">
+
+            <h3>Storage Usage</h3>
+
+            <div class="value">
+                {{ disk }}%
+            </div>
+
+            <div class="resource-status {{ disk_status|lower }}">
+
+                Status: {{ disk_status }}
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- SYSTEM HEALTH -->
+
+    <div class="box">
+
+        <h2>Overall System Health</h2>
+
+        <h3 class="{{ health|lower }}">
+
+            {{ health }}
+
+        </h3>
+
+    </div>
+
+
+    <!-- ACTIVE ALERTS -->
+
+    <div class="box">
+
+        <h2>Active Alerts</h2>
+
+
+        {% if alerts %}
+
+
+            {% for alert in alerts %}
+
+                <div class="alert-item">
+
+                    {{ alert }}
+
+                </div>
+
+            {% endfor %}
+
+
+        {% else %}
+
+
+            <p class="normal">
+
+                No active alerts.
+                All resources are operating normally.
+
+            </p>
+
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- RESOURCE GRAPHS -->
+
+    <div class="box">
+
+        <h2>Resource Usage Trends</h2>
+
+
+        <div class="graphs">
+
+
+            <!-- CPU GRAPH -->
+
+            <div class="graph-box">
+
+                <h3>CPU Usage</h3>
+
+                <canvas id="cpuChart"></canvas>
+
+            </div>
+
+
+            <!-- MEMORY GRAPH -->
+
+            <div class="graph-box">
+
+                <h3>Memory Usage</h3>
+
+                <canvas id="memoryChart"></canvas>
+
+            </div>
+
+
+            <!-- STORAGE GRAPH -->
+
+            <div class="graph-box">
+
+                <h3>Storage Usage</h3>
+
+                <canvas id="diskChart"></canvas>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+    <!-- MONITORING HISTORY -->
+
+    <div class="box">
+
+        <h2>Recent Monitoring History</h2>
+
+
+        <table>
+
+            <tr>
+
+                <th>Time</th>
+
+                <th>CPU</th>
+
+                <th>Memory</th>
+
+                <th>Storage</th>
+
+                <th>Health</th>
+
+            </tr>
+
+
+            {% for record in history %}
+
+
+            <tr>
+
+                <td>
+                    {{ record[4] }}
+                </td>
+
+                <td>
+                    {{ record[0] }}%
+                </td>
+
+                <td>
+                    {{ record[1] }}%
+                </td>
+
+                <td>
+                    {{ record[2] }}%
+                </td>
+
+                <td class="{{ record[3]|lower }}">
+
+                    {{ record[3] }}
+
+                </td>
+
+            </tr>
+
+
+            {% endfor %}
+
+
+        </table>
+
+    </div>
+
+
+    <!-- ALERT HISTORY -->
+
+    <div class="box">
+
+        <h2>Alert History</h2>
+
+
+        {% if alert_history %}
+
+
+        <table>
+
+            <tr>
+
+                <th>Time</th>
+
+                <th>Resource</th>
+
+                <th>Usage</th>
+
+                <th>Status</th>
+
+                <th>Message</th>
+
+            </tr>
+
+
+            {% for alert in alert_history %}
+
+
+            <tr>
+
+                <td>
+                    {{ alert[4] }}
+                </td>
+
+                <td>
+                    {{ alert[0] }}
+                </td>
+
+                <td>
+                    {{ alert[1] }}%
+                </td>
+
+                <td class="{{ alert[2]|lower }}">
+
+                    {{ alert[2] }}
+
+                </td>
+
+                <td>
+                    {{ alert[3] }}
+                </td>
+
+            </tr>
+
+
+            {% endfor %}
+
+
+        </table>
+
+
+        {% else %}
+
+
+            <p>
+                No alerts have been recorded yet.
+            </p>
+
+
+        {% endif %}
+
+    </div>
+
+
+</div>
+
+
+<!-- CHARTS -->
+
+<script>
+
+    const times =
+        {{ graph_times | tojson }};
+
+    const cpuData =
+        {{ graph_cpu | tojson }};
+
+    const memoryData =
+        {{ graph_memory | tojson }};
+
+    const diskData =
+        {{ graph_disk | tojson }};
+
+
+    /* CPU CHART */
+
+    new Chart(
+
+        document.getElementById("cpuChart"),
+
+        {
+
+            type: "line",
+
+            data: {
+
+                labels: times,
+
+                datasets: [{
+
+                    label: "CPU Usage (%)",
+
+                    data: cpuData,
+
+                    tension: 0.3
+
+                }]
+
+            },
+
+            options: {
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        max: 100
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    );
+
+
+    /* MEMORY CHART */
+
+    new Chart(
+
+        document.getElementById("memoryChart"),
+
+        {
+
+            type: "line",
+
+            data: {
+
+                labels: times,
+
+                datasets: [{
+
+                    label: "Memory Usage (%)",
+
+                    data: memoryData,
+
+                    tension: 0.3
+
+                }]
+
+            },
+
+            options: {
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        max: 100
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    );
+
+
+    /* STORAGE CHART */
+
+    new Chart(
+
+        document.getElementById("diskChart"),
+
+        {
+
+            type: "line",
+
+            data: {
+
+                labels: times,
+
+                datasets: [{
+
+                    label: "Storage Usage (%)",
+
+                    data: diskData,
+
+                    tension: 0.3
+
+                }]
+
+            },
+
+            options: {
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        max: 100
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    );
+
+</script>
+
+
+</body>
+
+</html>

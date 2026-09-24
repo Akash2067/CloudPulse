@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>CloudPulse Settings</title>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+        }
+
+        header {
+            background-color: #1f2937;
+            color: white;
+            padding: 20px 40px;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        header p {
+            margin: 5px 0 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .settings-box {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            margin-top: 25px;
+            padding: 12px 20px;
+            background-color: #1f2937;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .error {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            padding: 12px;
+            border-radius: 5px;
+        }
+
+        .info {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #1f2937;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<header>
+
+    <h1>CloudPulse</h1>
+
+    <p>Threshold Settings</p>
+
+</header>
+
+
+<div class="container">
+
+    <div class="settings-box">
+
+        <h2>Alert Thresholds</h2>
+
+        <p class="info">
+            Configure when CloudPulse should classify
+            resource usage as Warning or Critical.
+        </p>
+
+        {% if error %}
+
+            <div class="error">
+                {{ error }}
+            </div>
+
+        {% endif %}
+
+
+        <form method="POST">
+
+            <label>
+                Warning Threshold (%)
+            </label>
+
+            <input
+                type="number"
+                name="warning_threshold"
+                min="0"
+                max="100"
+                step="1"
+                value="{{ warning_threshold }}"
+                required
+            >
+
+
+            <label>
+                Critical Threshold (%)
+            </label>
+
+            <input
+                type="number"
+                name="critical_threshold"
+                min="0"
+                max="100"
+                step="1"
+                value="{{ critical_threshold }}"
+                required
+            >
+
+
+            <button type="submit">
+                Save Thresholds
+            </button>
+
+        </form>
+
+
+        <a
+            href="/"
+            class="back-link"
+        >
+            ← Back to Dashboard
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>
